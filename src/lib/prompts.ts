@@ -1,4 +1,4 @@
-import db from '../lib/db';
+import db from './db';
 
 // Define the database row type
 interface PromptRow {
