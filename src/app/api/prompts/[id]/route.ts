@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getPromptById } from "@/lib/prompts";
 import { currentUser, auth } from "@clerk/nextjs/server";
 import db from "@/lib/db";
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, context: { params: { id: string } }) {
+  const { params } = context;
   const { userId } = await auth();
   const user = await currentUser();
   if (!userId || !user || !user.publicMetadata?.admin) {
@@ -21,7 +22,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   return NextResponse.json({ ...prompt, ...body, id });
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, context: { params: { id: string } }) {
+  const { params } = context;
   const { userId } = await auth();
   const user = await currentUser();
   if (!userId || !user || !user.publicMetadata?.admin) {
