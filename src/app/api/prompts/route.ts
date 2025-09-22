@@ -1,28 +1,24 @@
+
 import { NextResponse } from "next/server";
-import { readPrompts, writePrompts, type PromptItem } from "@/lib/storage";
+import { addPrompt, getPrompts } from "@/lib/prompts";
+import { currentUser, auth } from "@clerk/nextjs/server";
+
 
 export async function GET() {
-  const items = await readPrompts();
+  const items = getPrompts();
   return NextResponse.json(items);
 }
 
 export async function POST(req: Request) {
-  const body = (await req.json()) as Partial<PromptItem>;
-  if (!body.prompt || !body.image || !body.title) {
-    return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  const { userId } = await auth();
+  const user = await currentUser();
+  if (!userId || !user || !user.publicMetadata?.admin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const items = await readPrompts();
-  const id = items.length ? Math.max(...items.map((i) => i.id)) + 1 : 1;
-  const item: PromptItem = {
-    id,
-    title: body.title!,
-    prompt: body.prompt!,
-    image: body.image!,
-    tags: body.tags || [],
-    feature: body.feature ?? null,
-    createdAt: new Date().toISOString(),
-  };
-  items.unshift(item);
-  await writePrompts(items);
-  return NextResponse.json(item, { status: 201 });
+  const body = await req.json();
+  if (!body.prompt || !body.image) {
+    return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+  }
+  const id = addPrompt(body.prompt, body.image);
+  return NextResponse.json({ id, ...body }, { status: 201 });
 }

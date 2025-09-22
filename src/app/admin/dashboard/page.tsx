@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
 
 type PromptItem = {
   id: number;
@@ -46,6 +48,7 @@ function computeAverageColor(img: HTMLImageElement): { r: number; g: number; b: 
 }
 
 export default function AdminDashboardPage() {
+  const { isLoaded, isSignedIn, user } = useUser();
   const router = useRouter();
   const [items, setItems] = useState<PromptItem[]>([]);
   const [title, setTitle] = useState("");
@@ -56,9 +59,11 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const authed = typeof window !== "undefined" && localStorage.getItem("promptslelo_admin_authed") === "1";
-    if (!authed) router.replace("/admin/login");
-  }, [router]);
+    if (!isLoaded) return;
+    if (!isSignedIn) {
+      router.replace("/admin/login");
+    }
+  }, [isLoaded, isSignedIn, router]);
 
   const load = async () => {
     const res = await fetch("/api/prompts", { cache: "no-store" });
@@ -109,6 +114,11 @@ export default function AdminDashboardPage() {
       setImageUrl("");
       setImageFile(null);
       await load();
+      toast.success("Prompt added successfully!");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to add prompt."
+      );
     } finally {
       setLoading(false);
     }
@@ -119,6 +129,25 @@ export default function AdminDashboardPage() {
     await load();
   };
 
+  if (!isLoaded) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+  if (!isSignedIn) {
+    router.replace("/admin/login");
+    return null;
+  }
+  if (!user?.publicMetadata?.admin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="p-6 bg-white rounded shadow text-center">
+          <h2 className="text-xl font-semibold mb-2">Not authorized</h2>
+          <p className="text-muted-foreground mb-4">You do not have admin access.</p>
+          <a href="/" className="text-blue-600 underline">Go to homepage</a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen p-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between gap-3 mb-6">
@@ -128,7 +157,6 @@ export default function AdminDashboardPage() {
           <Button
             variant="destructive"
             onClick={() => {
-              localStorage.removeItem("promptslelo_admin_authed");
               router.replace("/admin/login");
             }}
           >
