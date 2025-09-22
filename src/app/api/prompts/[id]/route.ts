@@ -10,10 +10,14 @@ export async function PUT(req: Request, context: { params: { id: string } }) {
   }
   const body = await req.json();
   const id = Number(context.params.id);
-  const prompt = getPromptById(id);
+  const prompt = await getPromptById(id);
   if (!prompt) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const stmt = db.prepare('UPDATE prompts SET prompt = ?, image_url = ? WHERE id = ?');
-  stmt.run(body.prompt ?? prompt.prompt, body.imageUrl ?? prompt.image_url, id);
+  stmt.run(
+    body.prompt ?? prompt.image, // Use 'image' if 'prompt' does not exist
+    body.imageUrl ?? prompt.image,
+    id
+  );
   return NextResponse.json({ ...prompt, ...body, id });
 }
 

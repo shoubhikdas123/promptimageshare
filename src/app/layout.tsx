@@ -8,7 +8,11 @@ import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Promptslelo",
-  description: "Discover, search, and copy the best AI prompts — Promptslelo",
+  description: "Awesome nano banana prompts — Promptslelo",
+  icons: {
+    icon: "/logoup.png",
+  
+  },
 };
 
 export default function RootLayout({
