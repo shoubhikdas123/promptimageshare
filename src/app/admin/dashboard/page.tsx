@@ -125,8 +125,17 @@ export default function AdminDashboardPage() {
   };
 
   const handleDelete = async (id: number) => {
-    await fetch(`/api/prompts/${id}`, { method: "DELETE" });
-    await load();
+    // Optimistically remove from UI
+    setItems((prev) => prev.filter((item) => item.id !== id));
+    // Call backend in background
+    fetch(`/api/prompts/${id}`, { method: "DELETE" })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to delete");
+      })
+      .catch((err) => {
+        toast.error(err instanceof Error ? err.message : "Failed to delete prompt.");
+        // Optionally: reload if error, or re-add item
+      });
   };
 
   if (!isLoaded) {
