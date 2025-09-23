@@ -13,22 +13,26 @@ interface Prompt extends PromptRow {
   image: string;
 }
 
-export function addPrompt(prompt: string, imageUrl: string) {
-  const stmt = db.prepare('INSERT INTO prompts (prompt, image_url) VALUES (?, ?)');
-  const info = stmt.run(prompt, imageUrl);
-  return info.lastInsertRowid;
+export async function addPrompt(prompt: string, imageUrl: string) {
+  const result = await db.execute(
+    'INSERT INTO prompts (prompt, image_url) VALUES (?, ?)',
+    [prompt, imageUrl]
+  );
+  // Turso returns lastInsertRowid in result, but may be string
+  return result.lastInsertRowid;
 }
 
-export function getPrompts(): Prompt[] {
-  const stmt = db.prepare('SELECT * FROM prompts ORDER BY created_at DESC');
-  const rows = stmt.all() as PromptRow[];
+export async function getPrompts(): Promise<Prompt[]> {
+  const result = await db.execute('SELECT * FROM prompts ORDER BY created_at DESC');
+  // result.rows is Row[], but we expect PromptRow[]
+  const rows = result.rows as unknown as PromptRow[];
   return rows.map((row) => ({ ...row, image: row.image_url }));
 }
 
-export function getPromptById(id: number): Prompt | undefined {
-  const stmt = db.prepare('SELECT * FROM prompts WHERE id = ?');
-  const row = stmt.get(id) as PromptRow | undefined;
+export async function getPromptById(id: number): Promise<Prompt | undefined> {
+  const result = await db.execute('SELECT * FROM prompts WHERE id = ?', [id]);
+  const rows = result.rows as unknown as PromptRow[];
+  const row = rows[0];
   if (!row) return undefined;
-  // Keep all original properties AND add the image alias
   return { ...row, image: row.image_url };
 }

@@ -1,18 +1,20 @@
-import Database from 'better-sqlite3';
-import path from 'path';
 
-const db = new Database(path.join(process.cwd(), 'data', 'app.db'));
+import { createClient } from '@libsql/client';
 
-// Create prompts table
-// id: integer primary key, prompt: text, image_url: text, created_at: datetime
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL!,
+  authToken: process.env.TURSO_AUTH_TOKEN,
+});
 
-db.exec(`
-CREATE TABLE IF NOT EXISTS prompts (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  prompt TEXT NOT NULL,
-  image_url TEXT NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-`);
+// Table creation (run once, or use migration)
+// You may want to run this manually in production, or check if table exists before running.
+// await db.execute(`
+// CREATE TABLE IF NOT EXISTS prompts (
+//   id INTEGER PRIMARY KEY AUTOINCREMENT,
+//   prompt TEXT NOT NULL,
+//   image_url TEXT NOT NULL,
+//   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+// );
+// `);
 
 export default db;

@@ -20,16 +20,11 @@ export async function PUT(
   const body = await req.json();
   const id = Number(resolvedParams.id);
   const prompt = await getPromptById(id);
-  
   if (!prompt) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  
-  const stmt = db.prepare('UPDATE prompts SET prompt = ?, image_url = ? WHERE id = ?');
-  stmt.run(
-    body.prompt ?? prompt.prompt, // Fixed: was using 'image' instead of 'prompt'
-    body.imageUrl ?? prompt.image_url, // Fixed: was using 'image' instead of 'image_url'
-    id
+  await db.execute(
+    'UPDATE prompts SET prompt = ?, image_url = ? WHERE id = ?',
+    [body.prompt ?? prompt.prompt, body.imageUrl ?? prompt.image_url, id]
   );
-  
   return NextResponse.json({ ...prompt, ...body, id });
 }
 
@@ -46,8 +41,6 @@ export async function DELETE(
   }
   
   const id = Number(resolvedParams.id);
-  const stmt = db.prepare('DELETE FROM prompts WHERE id = ?');
-  stmt.run(id);
-  
+  await db.execute('DELETE FROM prompts WHERE id = ?', [id]);
   return NextResponse.json({ ok: true });
 }

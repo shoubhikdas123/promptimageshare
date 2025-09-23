@@ -1,11 +1,9 @@
-
 import { NextResponse } from "next/server";
 import { addPrompt, getPrompts } from "@/lib/prompts";
 import { currentUser, auth } from "@clerk/nextjs/server";
 
-
 export async function GET() {
-  const items = getPrompts();
+  const items = await getPrompts();
   return NextResponse.json(items);
 }
 
@@ -19,6 +17,6 @@ export async function POST(req: Request) {
   if (!body.prompt || !body.image) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
   }
-  const id = addPrompt(body.prompt, body.image);
-  return NextResponse.json({ id, ...body }, { status: 201 });
+  const id = await addPrompt(body.prompt, body.image);
+  return NextResponse.json({ id: Number(id), ...body }, { status: 201 });
 }
