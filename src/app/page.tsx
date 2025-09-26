@@ -5,6 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { Search, ImagePlus, X, Check, Copy } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -40,17 +48,17 @@ function computeAverageColor(img: HTMLImageElement): { r: number; g: number; b: 
     return { r: Math.round(r / n), g: Math.round(g / n), b: Math.round(b / n) };
   } catch {
     return { r: 0, g: 0, b: 0 };
-  }
-}
+  }}
+// ...existing code...
 
 function rgbDistance(a: { r: number; g: number; b: number }, b: { r: number; g: number; b: number }) {
   const dr = a.r - b.r;
   const dg = a.g - b.g;
   const db = a.b - b.b;
-  return Math.sqrt(dr * dr + dg * dg + db * db);
-}
+  return Math.sqrt(dr * dr + dg * dg + db * db);}
+// ...existing code...
 
-export default function HomePage() {
+function Page() {
   const [items, setItems] = useState<PromptItem[]>([]);
   const [query, setQuery] = useState("");
   const [copiedId, setCopiedId] = useState<number | null>(null);
@@ -60,6 +68,8 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [featureCache, setFeatureCache] = useState<Record<number, { r: number; g: number; b: number }>>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [selectedItem, setSelectedItem] = useState<PromptItem | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -267,7 +277,14 @@ export default function HomePage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map((it) => (
-                <Card key={it.id} className="overflow-hidden">
+                <Card
+                  key={it.id}
+                  className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => {
+                    setSelectedItem(it);
+                    setModalOpen(true);
+                  }}
+                >
                   <CardContent className="p-0">
                     <div className="relative">
                       <img
@@ -283,7 +300,10 @@ export default function HomePage() {
                         <Button
                           size="sm"
                           variant="secondary"
-                          onClick={() => handleCopy(it.id, it.prompt)}
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleCopy(it.id, it.prompt);
+                          }}
                           className="shadow"
                           title="Copy prompt"
                         >
@@ -311,6 +331,74 @@ export default function HomePage() {
                   </CardContent>
                 </Card>
               ))}
+              {/* Modal for item details */}
+              <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+                <DialogContent
+                  className="max-w-md w-full max-h-[90vh] sm:max-h-[80vh] overflow-y-auto p-0 flex flex-col"
+                  showCloseButton={false}
+                >
+                  {selectedItem && (
+                    <>
+                      {/* Mobile: Only close button, rest scrollable */}
+                      <div className="flex justify-end p-2 sm:hidden">
+                        <DialogClose asChild>
+                          <Button size="icon" variant="ghost" aria-label="Close">
+                            <X className="h-5 w-5" />
+                          </Button>
+                        </DialogClose>
+                      </div>
+                      {/* Desktop: Title, tags, close button */}
+                      <div className="hidden sm:block px-6 pt-6">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="text-lg font-semibold mb-1">{selectedItem.title}</div>
+                            {selectedItem.tags && selectedItem.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {selectedItem.tags.map((t) => (
+                                  <span key={t} className="text-[10px] px-2 py-0.5 rounded bg-secondary text-secondary-foreground border">
+                                    {t}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <DialogClose asChild>
+                            <Button size="icon" variant="ghost" aria-label="Close">
+                              <X className="h-5 w-5" />
+                            </Button>
+                          </DialogClose>
+                        </div>
+                      </div>
+                      <div className="flex-1 flex flex-col items-center px-4 sm:px-6 pb-6 overflow-y-auto">
+                        <img
+                          src={selectedItem.image}
+                          alt={selectedItem.title}
+                          className="w-full h-56 object-cover object-top rounded mb-4 mt-2"
+                          crossOrigin="anonymous"
+                        />
+                        <div className="mb-4 w-full">
+                          <p className="text-base whitespace-pre-wrap">{selectedItem.prompt}</p>
+                        </div>
+                        <div className="flex justify-end w-full">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleCopy(selectedItem.id, selectedItem.prompt)}
+                            className="shadow"
+                            title="Copy prompt"
+                          >
+                            {copiedId === selectedItem.id ? (
+                              <><Check className="h-4 w-4 mr-1" /> Copied</>
+                            ) : (
+                              <><Copy className="h-4 w-4 mr-1" /> Copy</>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </DialogContent>
+              </Dialog>
             </div>
           )}
         </section>
@@ -322,3 +410,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+export default Page;
